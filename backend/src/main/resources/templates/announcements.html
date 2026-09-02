@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Announcements</title></head>
+<body>
+<h1>All Announcements</h1>
+<a href="/announcements/add">+ Post New Announcement</a><br><br>
+<table border="1">
+    <tr>
+        <th>Property ID</th><th>Announcement ID</th><th>Landlord ID</th>
+        <th>Message</th><th>Date</th><th>Action</th>
+    </tr>
+    <tr th:each="a : ${announcements}">
+        <td th:text="${a.propertyId}"></td>
+        <td th:text="${a.announcementId}"></td>
+        <td th:text="${a.landlordId}"></td>
+        <td th:text="${a.message}"></td>
+        <td th:text="${a.date}"></td>
+        <td>
+            <a th:href="@{/announcements/edit/{p}/{a}(p=${a.propertyId},a=${a.announcementId})}">Edit</a> |
+            <a th:href="@{/announcements/delete/{p}/{a}(p=${a.propertyId},a=${a.announcementId})}" onclick="return confirm('Delete?')">Delete</a>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

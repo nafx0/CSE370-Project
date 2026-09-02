@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Tenant Ratings</title></head>
+<body>
+<h1>All Tenant Ratings</h1>
+<table border="1">
+    <tr>
+        <th>Rating ID</th><th>Landlord ID</th><th>Tenant ID</th>
+        <th>Rent Timing</th><th>Flat Condition</th><th>Comment</th><th>Action</th>
+    </tr>
+    <tr th:each="r : ${ratesTenants}">
+        <td th:text="${r.ratingId}"></td>
+        <td th:text="${r.landlordId}"></td>
+        <td th:text="${r.tenantId}"></td>
+        <td th:text="${r.rentTiming}"></td>
+        <td th:text="${r.flatCondition}"></td>
+        <td th:text="${r.comment}"></td>
+        <td><a th:href="@{/ratestenants/delete/{id}(id=${r.ratingId})}" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+</table>
+</body>
+</html>

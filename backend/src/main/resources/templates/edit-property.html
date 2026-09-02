@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Edit Property</title></head>
+<body>
+<h1>Edit Property</h1>
+<form th:action="@{/properties/edit}" th:object="${property}" method="post">
+    <input type="hidden" th:field="*{propertyId}">
+    <label>Landlord ID: <input type="number" th:field="*{landlordId}"></label><br><br>
+    <label>Address: <input type="text" th:field="*{address}"></label><br><br>
+    <label>Area: <input type="text" th:field="*{area}"></label><br><br>
+    <label>Rent: <input type="number" step="0.01" th:field="*{rent}"></label><br><br>
+    <label>Status: <input type="text" th:field="*{status}"></label><br><br>
+    <label>Posted Date: <input type="date" th:field="*{postedDate}"></label><br><br>
+    <label>Expiry Date: <input type="date" th:field="*{expiryDate}"></label><br><br>
+    <button type="submit">Save Changes</button>
+</form>
+</body>
+</html>

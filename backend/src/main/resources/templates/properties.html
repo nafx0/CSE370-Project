@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Properties</title></head>
+<body>
+<h1>All Properties</h1>
+<a href="/properties/add">+ Add New Property</a><br><br>
+<table border="1">
+    <tr>
+        <th>ID</th><th>Landlord ID</th><th>Address</th><th>Area</th>
+        <th>Rent</th><th>Status</th><th>Posted Date</th><th>Expiry Date</th><th>Action</th>
+    </tr>
+    <tr th:each="p : ${properties}">
+        <td th:text="${p.propertyId}"></td>
+        <td th:text="${p.landlordId}"></td>
+        <td th:text="${p.address}"></td>
+        <td th:text="${p.area}"></td>
+        <td th:text="${p.rent}"></td>
+        <td th:text="${p.status}"></td>
+        <td th:text="${p.postedDate}"></td>
+        <td th:text="${p.expiryDate}"></td>
+        <td>
+            <a th:href="@{/properties/edit/{id}(id=${p.propertyId})}">Edit</a> |
+            <a th:href="@{/properties/delete/{id}(id=${p.propertyId})}" onclick="return confirm('Delete this property?')">Delete</a>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

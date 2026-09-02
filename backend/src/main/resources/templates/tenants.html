@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Tenants</title></head>
+<body>
+<h1>All Tenants</h1>
+<table border="1">
+    <tr><th>User ID</th><th>Action</th></tr>
+    <tr th:each="t : ${tenants}">
+        <td th:text="${t.userId}"></td>
+        <td><a th:href="@{/tenants/delete/{id}(id=${t.userId})}" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+</table>
+</body>
+</html>

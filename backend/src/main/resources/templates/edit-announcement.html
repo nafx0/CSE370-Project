@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Edit Announcement</title></head>
+<body>
+<h1>Edit Announcement</h1>
+<form th:action="@{/announcements/edit}" th:object="${announcement}" method="post">
+    <input type="hidden" th:field="*{propertyId}">
+    <input type="hidden" th:field="*{announcementId}">
+    <label>Landlord ID: <input type="number" th:field="*{landlordId}"></label><br><br>
+    <label>Message: <textarea th:field="*{message}"></textarea></label><br><br>
+    <button type="submit">Save Changes</button>
+</form>
+</body>
+</html>

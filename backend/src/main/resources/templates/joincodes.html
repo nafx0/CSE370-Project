@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Join Codes</title></head>
+<body>
+<h1>All Join Codes</h1>
+<table border="1">
+    <tr>
+        <th>Code ID</th><th>Property ID</th><th>Used By Tenant ID</th>
+        <th>Code Value</th><th>Generated Date</th><th>Expiry Date</th><th>Status</th><th>Action</th>
+    </tr>
+    <tr th:each="j : ${joinCodes}">
+        <td th:text="${j.codeId}"></td>
+        <td th:text="${j.propertyId}"></td>
+        <td th:text="${j.usedByTenantId}"></td>
+        <td th:text="${j.codeValue}"></td>
+        <td th:text="${j.generatedDate}"></td>
+        <td th:text="${j.expiryDate}"></td>
+        <td th:text="${j.status}"></td>
+        <td><a th:href="@{/joincodes/delete/{id}(id=${j.codeId})}" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+</table>
+</body>
+</html>

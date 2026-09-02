@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Edit Complaint</title></head>
+<body>
+<h1>Edit Complaint</h1>
+<form th:action="@{/complaints/edit}" th:object="${complaint}" method="post">
+    <input type="hidden" th:field="*{propertyId}">
+    <input type="hidden" th:field="*{complaintId}">
+    <label>Tenant ID: <input type="number" th:field="*{tenantId}"></label><br><br>
+    <label>Message: <textarea th:field="*{message}"></textarea></label><br><br>
+    <label>Status:
+        <select th:field="*{status}">
+            <option value="pending">pending</option>
+            <option value="in progress">in progress</option>
+            <option value="resolved">resolved</option>
+        </select>
+    </label><br><br>
+    <button type="submit">Save Changes</button>
+</form>
+</body>
+</html>

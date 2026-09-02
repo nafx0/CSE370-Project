@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Tenancies</title></head>
+<body>
+<h1>All Tenancies</h1>
+<table border="1">
+    <tr>
+        <th>Tenant ID</th><th>Property ID</th><th>Join Date</th><th>Leave Date</th>
+    </tr>
+    <tr th:each="h : ${hasTenancies}">
+        <td th:text="${h.tenantId}"></td>
+        <td th:text="${h.propertyId}"></td>
+        <td th:text="${h.joinDate}"></td>
+        <td th:text="${h.leaveDate}"></td>
+    </tr>
+</table>
+</body>
+</html>

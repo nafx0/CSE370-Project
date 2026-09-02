@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Bills</title></head>
+<body>
+<h1>All Bills</h1>
+<table border="1">
+    <tr><th>ID</th><th>Property ID</th><th>Type</th><th>Total Amount</th><th>Month</th><th>Due Date</th><th>Action</th></tr>
+    <tr th:each="b : ${bills}">
+        <td th:text="${b.billId}"></td>
+        <td th:text="${b.propertyId}"></td>
+        <td th:text="${b.type}"></td>
+        <td th:text="${b.totalAmount}"></td>
+        <td th:text="${b.month}"></td>
+        <td th:text="${b.dueDate}"></td>
+        <td><a th:href="@{/bills/delete/{id}(id=${b.billId})}" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+</table>
+</body>
+</html>

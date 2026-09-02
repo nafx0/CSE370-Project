@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Bill Shares</title></head>
+<body>
+<h1>All Bill Shares</h1>
+<table border="1">
+    <tr>
+        <th>Share ID</th><th>Bill ID</th><th>Tenant ID</th>
+        <th>Share Amount</th><th>Paid Status</th><th>Paid Date</th><th>Action</th>
+    </tr>
+    <tr th:each="s : ${billShares}">
+        <td th:text="${s.shareId}"></td>
+        <td th:text="${s.billId}"></td>
+        <td th:text="${s.tenantId}"></td>
+        <td th:text="${s.shareAmount}"></td>
+        <td th:text="${s.paidStatus}"></td>
+        <td th:text="${s.paidDate}"></td>
+        <td><a th:href="@{/billshares/delete/{id}(id=${s.shareId})}" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Complaints</title></head>
+<body>
+<h1>All Complaints</h1>
+<a href="/complaints/add">+ File New Complaint</a><br><br>
+<table border="1">
+    <tr>
+        <th>Property ID</th><th>Complaint ID</th><th>Tenant ID</th>
+        <th>Message</th><th>Status</th><th>Date</th><th>Action</th>
+    </tr>
+    <tr th:each="c : ${complaints}">
+        <td th:text="${c.propertyId}"></td>
+        <td th:text="${c.complaintId}"></td>
+        <td th:text="${c.tenantId}"></td>
+        <td th:text="${c.message}"></td>
+        <td th:text="${c.status}"></td>
+        <td th:text="${c.date}"></td>
+        <td>
+            <a th:href="@{/complaints/edit/{p}/{c}(p=${c.propertyId},c=${c.complaintId})}">Edit</a> |
+            <a th:href="@{/complaints/delete/{p}/{c}(p=${c.propertyId},c=${c.complaintId})}" onclick="return confirm('Delete?')">Delete</a>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
