@@ -1,117 +1,54 @@
-# Digital Housing Platform
+# Team Workload Distribution — Digital Housing Platform
 
-A web app connecting landlords and tenants in Bangladesh — property listings, join-code enrollment, complaints, announcements, split bills, and two-way ratings, all under one roof.
+Split by module rather than by layer: each person owns the database table(s), backend controller, and frontend page(s) for their features end-to-end. This keeps the DB/backend/frontend workload equal for both people, rather than one person doing all the backend and the other doing all the UI.
 
-Built as a college project: a React (Vite) frontend talking to a Spring Boot + MySQL backend over a cookie-based session.
-
----
-
-## Table of contents
-
-- [What it does](#what-it-does)
-- [Tech stack](#tech-stack)
-- [Project structure](#project-structure)
-- [Getting started](#getting-started)
-- [Design system](#design-system)
-- [Known limitations](#known-limitations)
+Replace **Nafiul** / **Rahib** with actual names before submitting.
 
 ---
 
-## What it does
+## Nafiul — Identity, Properties & Enrollment
 
-Two roles, one platform:
+| Module | Database | Backend | Frontend |
+|---|---|---|---|
+| Auth | `User` table | `AuthController` (signup, login, logout, me) | `LoginPage.jsx`, `SignupPage.jsx`, `AuthContext.jsx` |
+| Users / Landlords / Tenants | `User`, `Landlord`, `Tenant` tables | `UserController`, `LandlordController`, `TenantController` | shared lookups used across pages (name/email/phone resolution) |
+| Properties | `Property` table | `PropertyController` (CRUD + date validation) | `PropertiesPage.jsx` |
+| Join Codes | `JoinCode` table | `JoinCodeController` (generate, join, revoke) | `PropertyDetailPage.jsx` — join code + enroll sections |
+| Tenancies | `HasTenancy` table | `TenancyController` (create, leave) | `PropertyDetailPage.jsx` — leave-tenancy section, `PropertiesPage.jsx` — enrolled-property card + modal |
+| App shell | — | — | `App.jsx` (routing), `ProtectedRoute.jsx`, `ProfilePage.jsx`, `DashboardPage.jsx` |
 
-**Landlords**
-- List properties with rent, area, and posting/expiry dates
-- Generate join codes so tenants can enroll themselves
-- Post announcements and track complaints on their properties
-- Create bills — the total is split automatically across every tenant currently enrolled, and rebalances if someone joins or leaves before it's paid
-- Rate tenants once they've moved out
+**Owns in `api.js`:** auth, users, landlords, tenants, properties, join codes, tenancies functions.
 
-**Tenants**
-- Browse every listed property, see the landlord's name and average rating
-- Enroll with a join code (one active tenancy at a time)
-- File complaints and read announcements for their property
-- See their share of each bill and confirm payment with a transaction ID
-- Rate their landlord once they've left
+## Rahib — Community, Ratings & Finance
 
-Nothing here uses a navbar — navigation happens through a single dashboard hub and in-page links back to it.
+| Module | Database | Backend | Frontend |
+|---|---|---|---|
+| Tenant Ratings | `RatesTenant` table | `TenantRatingController` (create + eligibility check) | `TenantsPage.jsx` |
+| Landlord Ratings | `RatesLandlord` table | `LandlordRatingController` (create + eligibility check) | `LandlordsPage.jsx` |
+| Announcements | `Announcement` table (composite key) | `AnnouncementController` | `AnnouncementsPage.jsx`, `PropertyDetailPage.jsx` — announcements section |
+| Complaints | `Complaint` table (composite key) | `ComplaintController` | `ComplaintsPage.jsx`, `PropertyDetailPage.jsx` — complaints section |
+| Bills | `Bill` table | `BillController` | `BillsPage.jsx` — bill creation + list |
+| Bill Shares | `BillShare` table | `BillShareController` (create, pay, delete) | `BillsPage.jsx` — share payment, `PropertyDetailPage.jsx` — "my bill share" section |
 
-## Tech stack
+**Owns in `api.js`:** tenant ratings, landlord ratings, announcements, complaints, bills, bill shares functions.
 
-| Layer | Choice |
-|---|---|
-| Frontend | React 18 + Vite |
-| Routing | react-router-dom |
-| Forms | react-hook-form |
-| Styling | Plain CSS, no framework — a small custom design system in `index.css` |
-| Backend | Spring Boot |
-| Database | MySQL |
-| Auth | Session cookie (`credentials: 'include'`) — no JWT |
+---
 
-## Project structure
+## Shared / joint work
 
-```
-src/
-├── main.jsx            # mounts <App /> — routing/auth providers live in App.jsx
-├── App.jsx             # routes + AuthProvider, no navbar
-├── api.js              # every API call, grouped by resource
-├── AuthContext.jsx      # current user, login/signup/logout, session check on load
-├── index.css            # design tokens + every page's styling
-│
-├── components/
-│   └── ProtectedRoute.jsx
-│
-└── pages/
-    ├── LoginPage.jsx
-    ├── SignupPage.jsx
-    ├── DashboardPage.jsx        # role-aware hub, no navbar needed
-    ├── PropertiesPage.jsx       # browse/manage listings, enrolled-property card
-    ├── PropertyDetailPage.jsx   # one property's announcements/complaints/bills
-    ├── TenantsPage.jsx          # landlord: current & past tenants, ratings
-    ├── LandlordsPage.jsx        # tenant: current & past landlords, ratings
-    ├── ComplaintsPage.jsx
-    ├── AnnouncementsPage.jsx
-    ├── BillsPage.jsx            # bill creation, auto-split, payment confirmation
-    └── ProfilePage.jsx
-```
+A few things don't split cleanly and are worth doing together (or handing off explicitly) rather than assigning to one person:
 
-## Getting started
+- **`PropertyDetailPage.jsx`** — this file contains sections from both people's modules (join codes/tenancy from Nafiul, announcements/complaints/bills from Rahib). Either pair-program this file or merge each person's section in separately — flag this clearly in the report so it's not miscounted as one person's work.
+- **`index.css` / design system** — the color tokens, typography, and base component styles (`.btn`, `.card`, `.list-row`, `.badge`, etc.) should be agreed on together once, early, so both people's pages look consistent. After that foundation exists, each person styles their own pages using it.
+- **CORS / backend config (`WebConfig.java`)** — a one-time global setup, not tied to any single module; whoever sets up the backend project initially can own this.
+- **Database schema / ER diagram** — worth designing together in one sitting even though individual tables are owned separately above, since several tables reference each other (`Property.landlordId`, `HasTenancy.propertyId` + `tenantId`, `BillShare.billId`, etc.).
 
-**Prerequisites:** Node.js, a running instance of the backend (`http://localhost:8080` by default), and a MySQL database it can connect to.
+## Balance check
 
-```bash
-# 1. Clone the project (skip if already scaffolded)
-git clone https://github.com/nafx0/CSE370-Project.git
+| | Nafiul | Rahib |
+|---|---|---|
+| DB tables owned | 5 (User, Landlord, Tenant, Property, JoinCode, HasTenancy — 6 counting the shared marker tables as one group) | 6 (RatesTenant, RatesLandlord, Announcement, Complaint, Bill, BillShare) |
+| Backend controllers | 6 | 6 |
+| Frontend pages (primary) | 6 (Login, Signup, Dashboard, Properties, Profile, + shared PropertyDetail) | 5 (Tenants, Landlords, Announcements, Complaints, Bills, + shared PropertyDetail) |
 
-# 2. Create the database using name '
-
-# 2. Install dependencies
-npm install
-
-# 3. Run the dev server
-npm run dev
-```
-
-The app expects the backend at `http://localhost:8080` with CORS configured to allow credentials from the Vite dev origin (`http://localhost:5173`). If you're on Windows and `npm` is blocked by PowerShell's execution policy, run:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-```
-
-Full endpoint reference lives in the API documentation handed off alongside this project.
-
-## Design system
-
-A quiet, ledger-inspired look — flat surfaces and hairline dividers instead of stacked cards, one accent color (`#1f4d3d`) for primary actions, and a single amber tone reserved for anything awaiting action. `Fraunces` carries headings, `Plus Jakarta Sans` carries everything else. The one place the design gets to be bold is the dashboard: a Pinterest-style bento grid that adapts to however many tiles a role has, with zero leftover empty space.
-
-Motion is deliberate rather than decorative — one fade on page load, and animation elsewhere only in response to something the person did (opening a modal, confirming a payment).
-
-## Known limitations
-
-Carried over from the API itself, not introduced by the frontend:
-
-- Passwords are stored and compared in plain text — fine for coursework, not for production
-- No pagination — every list endpoint returns all rows at once
-- Frontend forms now validate the expected input types and common regex constraints before submit, but server-side request validation is still intentionally lightweight for the coursework scope
-- Bill shares can't be edited once created, only deleted and recreated — this is how the frontend implements dynamic re-splitting when enrollment changes, and it means a share's amount is frozen the moment it's paid
+Close to even on paper — but Rahib's modules (bill splitting/recalculation, rating eligibility gating) carry more business-logic complexity than raw file count suggests, while Nafiul's modules (auth, routing, protected routes) carry more foundational/setup weight that has to happen first and unblocks everything else. Worth naming that trade-off explicitly in the report rather than relying on the table alone to prove "equal effort."
