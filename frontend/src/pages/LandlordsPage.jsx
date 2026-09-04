@@ -199,8 +199,14 @@ export default function LandlordsPage() {
                             type="number"
                             min="1"
                             max="5"
+                            step="1"
                             placeholder="5"
-                            {...register("rating", { required: "Required" })}
+                            {...register("rating", {
+                              required: "Rating is required",
+                              valueAsNumber: true,
+                              min: { value: 1, message: "Rating must be between 1 and 5." },
+                              max: { value: 5, message: "Rating must be between 1 and 5." },
+                            })}
                           />
                           {errors.rating && <p className="field-error">{errors.rating.message}</p>}
                         </div>

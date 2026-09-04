@@ -113,5 +113,5 @@ Carried over from the API itself, not introduced by the frontend:
 
 - Passwords are stored and compared in plain text — fine for coursework, not for production
 - No pagination — every list endpoint returns all rows at once
-- No input validation beyond what MySQL enforces, so malformed input can surface as a raw 500 instead of a clean error
+- Frontend forms now validate the expected input types and common regex constraints before submit, but server-side request validation is still intentionally lightweight for the coursework scope
 - Bill shares can't be edited once created, only deleted and recreated — this is how the frontend implements dynamic re-splitting when enrollment changes, and it means a share's amount is frozen the moment it's paid

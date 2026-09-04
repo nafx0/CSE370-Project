@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import gsap from "gsap";
 import { useAuth } from "../AuthContext";
 import heroImage from "../assets/aubrey-odom-ITzfgP77DTg-unsplash.jpg";
+import { EMAIL_PATTERN, PASSWORD_PATTERN } from "../utils/validation";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -83,7 +84,13 @@ export default function LoginPage() {
                   type="email"
                   placeholder="name@example.com"
                   autoComplete="email"
-                  {...register("email", { required: "Email is required" })}
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: EMAIL_PATTERN,
+                      message: "Please enter a valid email address.",
+                    },
+                  })}
                 />
                 {errors.email && <p className="field-error">{errors.email.message}</p>}
               </div>
@@ -94,7 +101,21 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  {...register("password", { required: "Password is required" })}
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be between 6 and 20 characters.",
+                    },
+                    maxLength: {
+                      value: 20,
+                      message: "Password must be between 6 and 20 characters.",
+                    },
+                    pattern: {
+                      value: PASSWORD_PATTERN,
+                      message: "Password must be between 6 and 20 characters.",
+                    },
+                  })}
                 />
                 {errors.password && <p className="field-error">{errors.password.message}</p>}
               </div>

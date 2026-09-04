@@ -33,6 +33,7 @@ import {
   Send,
   CheckCircle2,
 } from "lucide-react";
+import { JOIN_CODE_PATTERN } from "../utils/validation";
 
 function statusBadgeClass(status) {
   const s = (status || "").toLowerCase();
@@ -286,8 +287,19 @@ export default function PropertyDetailPage() {
                 <input
                   placeholder="Enter 6-character code"
                   style={{ maxWidth: "260px" }}
-                  {...joinForm.register("code", { required: true })}
+                  {...joinForm.register("code", {
+                    required: "Pass code is required",
+                    pattern: {
+                      value: JOIN_CODE_PATTERN,
+                      message: "Use a 4–12 character uppercase or numeric pass code.",
+                    },
+                  })}
                 />
+                {joinForm.formState.errors.code && (
+                  <p className="field-error" style={{ marginTop: "0.5rem" }}>
+                    {joinForm.formState.errors.code.message}
+                  </p>
+                )}
                 <button className="btn" type="submit" disabled={hasActiveTenancyElsewhere}>
                   Enroll Now
                 </button>
@@ -359,8 +371,19 @@ export default function PropertyDetailPage() {
                     <input
                       placeholder="Broadcast a notice to all tenants in this building..."
                       style={{ flex: 1, minWidth: "240px" }}
-                      {...announcementForm.register("message", { required: true })}
+                      {...announcementForm.register("message", {
+                        required: "Announcement text is required",
+                        minLength: {
+                          value: 5,
+                          message: "Announcement must be at least 5 characters.",
+                        },
+                      })}
                     />
+                    {announcementForm.formState.errors.message && (
+                      <p className="field-error" style={{ marginTop: "0.5rem" }}>
+                        {announcementForm.formState.errors.message.message}
+                      </p>
+                    )}
                     <button className="btn btn-sm" type="submit">
                       <Send size={13} />
                       <span>Post Notice</span>
@@ -404,8 +427,19 @@ export default function PropertyDetailPage() {
                     <input
                       placeholder="Describe the maintenance issue or inquiry..."
                       style={{ flex: 1, minWidth: "240px" }}
-                      {...complaintForm.register("message", { required: true })}
+                      {...complaintForm.register("message", {
+                        required: "Complaint details are required",
+                        minLength: {
+                          value: 5,
+                          message: "Complaint must be at least 5 characters.",
+                        },
+                      })}
                     />
+                    {complaintForm.formState.errors.message && (
+                      <p className="field-error" style={{ marginTop: "0.5rem" }}>
+                        {complaintForm.formState.errors.message.message}
+                      </p>
+                    )}
                     <button className="btn btn-sm" type="submit">
                       <Send size={13} />
                       <span>Report Issue</span>

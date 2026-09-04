@@ -1,0 +1,11 @@
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const NAME_PATTERN = /^[A-Za-z .,'-]{2,80}$/;
+export const BD_PHONE_PATTERN = /^(?:\+88|88)?\s*0?1[3-9]\d{8}$/;
+export const NID_PATTERN = /^\d[\d\s-]{9,16}$/;
+export const PASSWORD_PATTERN = /^.{6,20}$/;
+export const ADDRESS_PATTERN = /^[A-Za-z0-9/#.,'() -]{5,120}$/;
+export const AREA_PATTERN = /^[A-Za-z0-9 .,'/-]{2,80}$/;
+export const BILL_TYPE_PATTERN = /^[A-Za-z][A-Za-z0-9 &/()\-]*$/;
+export const BILL_MONTH_PATTERN = /^(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/i;
+export const TRANSACTION_ID_PATTERN = /^TXN[-A-Z0-9 ]+$/i;
+export const JOIN_CODE_PATTERN = /^[A-Z0-9-]{4,12}$/i;

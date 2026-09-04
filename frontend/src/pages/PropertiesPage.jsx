@@ -23,6 +23,7 @@ import {
   LogOut,
   AlertTriangle,
 } from "lucide-react";
+import { ADDRESS_PATTERN, AREA_PATTERN } from "../utils/validation";
 
 function statusBadgeClass(status) {
   const s = (status || "").toLowerCase();
@@ -269,7 +270,17 @@ export default function PropertiesPage() {
                   <label>Full Address</label>
                   <input
                     placeholder="e.g. Flat 4B, House 12, Road 5, Dhanmondi"
-                    {...register("address", { required: "Address is required" })}
+                    {...register("address", {
+                      required: "Address is required",
+                      minLength: {
+                        value: 5,
+                        message: "Address must be at least 5 characters.",
+                      },
+                      pattern: {
+                        value: ADDRESS_PATTERN,
+                        message: "Please use a valid address format.",
+                      },
+                    })}
                   />
                   {errors.address && <p className="field-error">{errors.address.message}</p>}
                 </div>
@@ -279,7 +290,17 @@ export default function PropertiesPage() {
                     <label>Area / Neighborhood</label>
                     <input
                       placeholder="e.g. Dhanmondi, Dhaka"
-                      {...register("area", { required: "Area is required" })}
+                      {...register("area", {
+                        required: "Area is required",
+                        minLength: {
+                          value: 2,
+                          message: "Area must be at least 2 characters.",
+                        },
+                        pattern: {
+                          value: AREA_PATTERN,
+                          message: "Use letters, numbers, spaces, and common punctuation only.",
+                        },
+                      })}
                     />
                     {errors.area && <p className="field-error">{errors.area.message}</p>}
                   </div>
@@ -288,8 +309,17 @@ export default function PropertiesPage() {
                     <label>Monthly Rent (BDT)</label>
                     <input
                       type="number"
+                      min="1"
+                      step="100"
                       placeholder="e.g. 28000"
-                      {...register("rent", { required: "Rent is required" })}
+                      {...register("rent", {
+                        required: "Rent is required",
+                        valueAsNumber: true,
+                        min: {
+                          value: 1,
+                          message: "Rent must be greater than 0.",
+                        },
+                      })}
                     />
                     {errors.rent && <p className="field-error">{errors.rent.message}</p>}
                   </div>
@@ -298,10 +328,11 @@ export default function PropertiesPage() {
                 <div className="form-row">
                   <div className="field">
                     <label>Occupancy Status</label>
-                    <select {...register("status", { required: true })}>
+                    <select {...register("status", { required: "Status is required" })}>
                       <option value="available">Available</option>
                       <option value="rented">Rented</option>
                     </select>
+                    {errors.status && <p className="field-error">{errors.status.message}</p>}
                   </div>
                   <div />
                 </div>
@@ -309,14 +340,18 @@ export default function PropertiesPage() {
                 <div className="form-row">
                   <div className="field">
                     <label>Posted Date</label>
-                    <input type="date" {...register("postedDate", { required: true })} />
+                    <input
+                      type="date"
+                      {...register("postedDate", { required: "Posted date is required" })}
+                    />
+                    {errors.postedDate && <p className="field-error">{errors.postedDate.message}</p>}
                   </div>
                   <div className="field">
                     <label>Expiry Date</label>
                     <input
                       type="date"
                       {...register("expiryDate", {
-                        required: true,
+                        required: "Expiry date is required",
                         validate: (value) => {
                           if (!postedDate || !value) return true;
                           return (

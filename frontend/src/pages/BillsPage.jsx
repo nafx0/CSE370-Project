@@ -15,6 +15,7 @@ import {
 import AppShell from "../components/AppShell";
 import ActionMenu from "../components/ActionMenu";
 import { Plus, CreditCard } from "lucide-react";
+import { BILL_MONTH_PATTERN, BILL_TYPE_PATTERN, TRANSACTION_ID_PATTERN } from "../utils/validation";
 
 function isPaid(status) {
   return (status || "").toLowerCase() === "paid";
@@ -222,7 +223,13 @@ export default function BillsPage() {
                               <label>Transaction ID</label>
                               <input
                                 placeholder="TXN-98214"
-                                {...payForm.register("transactionId", { required: "Required" })}
+                                {...payForm.register("transactionId", {
+                                  required: "Transaction ID is required",
+                                  pattern: {
+                                    value: TRANSACTION_ID_PATTERN,
+                                    message: "Use a valid TXN ID such as TXN-98214.",
+                                  },
+                                })}
                               />
                               {payForm.formState.errors.transactionId && (
                                 <p className="field-error">{payForm.formState.errors.transactionId.message}</p>
@@ -234,7 +241,11 @@ export default function BillsPage() {
                               <input
                                 placeholder="Repeat TXN ID"
                                 {...payForm.register("confirmTransactionId", {
-                                  required: "Required",
+                                  required: "Please confirm the transaction ID",
+                                  pattern: {
+                                    value: TRANSACTION_ID_PATTERN,
+                                    message: "Use a valid TXN ID such as TXN-98214.",
+                                  },
                                   validate: (value, formValues) =>
                                     value === formValues.transactionId || "IDs do not match",
                                 })}
@@ -292,19 +303,35 @@ export default function BillsPage() {
                   <div className="form-row">
                     <div className="field">
                       <label>Target Residence</label>
-                      <select {...billForm.register("propertyId", { required: true })}>
+                      <select {...billForm.register("propertyId", { required: "Please select a property" })}>
                         <option value="" disabled>Select a property…</option>
                         {myProperties.map((p) => (
                           <option key={p.propertyId} value={p.propertyId}>{p.address}</option>
                         ))}
                       </select>
+                      {billForm.formState.errors.propertyId && (
+                        <p className="field-error">{billForm.formState.errors.propertyId.message}</p>
+                      )}
                     </div>
                     <div className="field">
                       <label>Bill Type</label>
                       <input
                         placeholder="e.g. Electricity, Water, Gas, Internet"
-                        {...billForm.register("type", { required: true })}
+                        {...billForm.register("type", {
+                          required: "Bill type is required",
+                          minLength: {
+                            value: 2,
+                            message: "Bill type must be at least 2 characters.",
+                          },
+                          pattern: {
+                            value: BILL_TYPE_PATTERN,
+                            message: "Use letters, spaces, and common bill characters only.",
+                          },
+                        })}
                       />
+                      {billForm.formState.errors.type && (
+                        <p className="field-error">{billForm.formState.errors.type.message}</p>
+                      )}
                     </div>
                   </div>
 
@@ -313,22 +340,49 @@ export default function BillsPage() {
                       <label>Total Amount (BDT)</label>
                       <input
                         type="number"
+                        min="1"
+                        step="0.01"
                         placeholder="e.g. 4500"
-                        {...billForm.register("totalAmount", { required: true })}
+                        {...billForm.register("totalAmount", {
+                          required: "Total amount is required",
+                          valueAsNumber: true,
+                          min: {
+                            value: 1,
+                            message: "Total amount must be greater than 0.",
+                          },
+                        })}
                       />
+                      {billForm.formState.errors.totalAmount && (
+                        <p className="field-error">{billForm.formState.errors.totalAmount.message}</p>
+                      )}
                     </div>
                     <div className="field">
                       <label>Billing Month</label>
                       <input
                         placeholder="e.g. October 2026"
-                        {...billForm.register("month", { required: true })}
+                        {...billForm.register("month", {
+                          required: "Billing month is required",
+                          pattern: {
+                            value: BILL_MONTH_PATTERN,
+                            message: "Use a month name followed by a 4-digit year (e.g. October 2026).",
+                          },
+                        })}
                       />
+                      {billForm.formState.errors.month && (
+                        <p className="field-error">{billForm.formState.errors.month.message}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="field">
                     <label>Due Date</label>
-                    <input type="date" {...billForm.register("dueDate", { required: true })} />
+                    <input
+                      type="date"
+                      {...billForm.register("dueDate", { required: "Due date is required" })}
+                    />
+                    {billForm.formState.errors.dueDate && (
+                      <p className="field-error">{billForm.formState.errors.dueDate.message}</p>
+                    )}
                   </div>
 
                   <div className="form-actions">

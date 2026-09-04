@@ -173,7 +173,13 @@ export default function TenantsPage() {
                             <label>Payment Timing</label>
                             <input
                               placeholder="e.g. Always on time"
-                              {...register("rentTiming", { required: "Required" })}
+                              {...register("rentTiming", {
+                                required: "Payment timing is required",
+                                minLength: {
+                                  value: 2,
+                                  message: "Payment timing must be at least 2 characters.",
+                                },
+                              })}
                             />
                             {errors.rentTiming && <p className="field-error">{errors.rentTiming.message}</p>}
                           </div>
@@ -181,7 +187,13 @@ export default function TenantsPage() {
                             <label>Premises Upkeep</label>
                             <input
                               placeholder="e.g. Clean & maintained"
-                              {...register("flatCondition", { required: "Required" })}
+                              {...register("flatCondition", {
+                                required: "Premises upkeep is required",
+                                minLength: {
+                                  value: 2,
+                                  message: "Premises upkeep must be at least 2 characters.",
+                                },
+                              })}
                             />
                             {errors.flatCondition && <p className="field-error">{errors.flatCondition.message}</p>}
                           </div>
