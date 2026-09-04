@@ -81,13 +81,13 @@ src/
 **Prerequisites:** Node.js, a running instance of the backend (`http://localhost:8080` by default), and a MySQL database it can connect to.
 
 ```bash
-# 1. Create the project (skip if already scaffolded)
-npm create vite@latest frontend -- --template react
-cd frontend
+# 1. Clone the project (skip if already scaffolded)
+git clone https://github.com/nafx0/CSE370-Project.git
+
+# 2. Create the database using name '
 
 # 2. Install dependencies
 npm install
-npm install react-router-dom react-hook-form
 
 # 3. Run the dev server
 npm run dev

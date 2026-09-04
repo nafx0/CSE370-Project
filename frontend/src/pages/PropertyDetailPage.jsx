@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import AppShell from "../components/AppShell";
+import ActionMenu from "../components/ActionMenu";
+import Modal from "../components/Modal";
 import {
   getProperty,
   getAnnouncements,
@@ -17,6 +20,19 @@ import {
   getTenancies,
   leaveTenancy,
 } from "../api";
+import {
+  ArrowLeft,
+  MapPin,
+  Key,
+  AlertTriangle,
+  Megaphone,
+  AlertCircle,
+  Receipt,
+  Plus,
+  Calendar,
+  Send,
+  CheckCircle2,
+} from "lucide-react";
 
 function statusBadgeClass(status) {
   const s = (status || "").toLowerCase();
@@ -26,9 +42,6 @@ function statusBadgeClass(status) {
   return "badge-neutral";
 }
 
-// The backend only sets paidStatus once a share is actually paid — a
-// freshly created share comes back as paidStatus: null, which would
-// otherwise render as a badge with the right color but no text.
 function paidLabel(status) {
   return (status || "").toLowerCase() === "paid" ? "PAID" : "UNPAID";
 }
@@ -48,6 +61,7 @@ export default function PropertyDetailPage() {
   const [tenancies, setTenancies] = useState([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showVacateModal, setShowVacateModal] = useState(false);
 
   const announcementForm = useForm();
   const complaintForm = useForm();
@@ -89,9 +103,6 @@ export default function PropertyDetailPage() {
       (t) => t.propertyId === propertyId && t.tenantId === user?.userId && !t.leaveDate
     );
 
-  // A tenant can't enroll anywhere new while they still have an active
-  // tenancy elsewhere — the server enforces this too, but flagging it here
-  // avoids a pointless failed submit.
   const hasActiveTenancyElsewhere =
     !isLandlord &&
     !isEnrolled &&
@@ -105,11 +116,9 @@ export default function PropertyDetailPage() {
     try {
       await joinProperty(user.userId, formData.code.trim());
       joinForm.reset();
-      setNotice("You've joined this property.");
+      setNotice("Successfully joined this property.");
       loadAll();
     } catch (err) {
-      // server messages already explain: expired/inactive code, already
-      // enrolled here, or an active tenancy elsewhere
       setError(err.message);
     }
   }
@@ -119,7 +128,7 @@ export default function PropertyDetailPage() {
     setNotice("");
     try {
       await leaveTenancy(user.userId, propertyId);
-      setNotice("You've left this property.");
+      setNotice("You have vacated this property.");
       loadAll();
     } catch (err) {
       setError(err.message);
@@ -177,7 +186,15 @@ export default function PropertyDetailPage() {
     }
   }
 
-  if (!property) return <div className="page"><p className="loading">Loading…</p></div>;
+  if (!property) {
+    return (
+      <AppShell>
+        <div className="page">
+          <p className="loading">Loading residence details…</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   const visibleComplaints = isOwner
     ? complaints
@@ -188,201 +205,303 @@ export default function PropertyDetailPage() {
   );
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <Link to="/properties" className="back-link">← Properties</Link>
-          <h1>{property.address}</h1>
-          <p className="page-subtitle">
-            {property.area} · {property.rent} BDT/month ·{" "}
-            <span className={`badge ${statusBadgeClass(property.status)}`}>{property.status}</span>
-          </p>
-        </div>
-      </div>
-
-      {error && <p className="banner-error">{error}</p>}
-      {notice && <p className="badge badge-ok" style={{ marginBottom: "1.5rem" }}>{notice}</p>}
-
-      {!isLandlord && !isEnrolled && (
-        <div className="section">
-          <div className="card">
-            <h2>Enroll in this property</h2>
-            {hasActiveTenancyElsewhere && (
-              <p className="form-hint">
-                You already have an active tenancy elsewhere — leave it from that property's page
-                before joining this one.
-              </p>
-            )}
-            <form className="inline-form" onSubmit={joinForm.handleSubmit(onEnroll)}>
-              <input
-                placeholder="Join code"
-                {...joinForm.register("code", { required: true })}
-              />
-              <button className="btn" type="submit" disabled={hasActiveTenancyElsewhere}>
-                Enroll
-              </button>
-            </form>
+    <AppShell>
+      <div className="page">
+        {/* Header Breadcrumb & Actions */}
+        <div className="page-header">
+          <div>
+            <Link to="/properties" className="back-link">
+              <ArrowLeft size={14} /> Back to Properties
+            </Link>
+            <h1>{property.address}</h1>
+            <div className="list-row-meta" style={{ fontSize: "0.92rem", gap: "0.6rem" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                <MapPin size={14} /> {property.area}
+              </span>
+              <span>•</span>
+              <span style={{ fontWeight: "600", color: "#fff" }}>{property.rent} BDT / month</span>
+              <span>•</span>
+              <span className={`badge ${statusBadgeClass(property.status)}`}>{property.status}</span>
+            </div>
           </div>
-        </div>
-      )}
 
-      {!isLandlord && isEnrolled && (
-        <div className="section">
-          <div className="card">
-            <h2>Your tenancy</h2>
-            <p className="form-hint">
-              Leaving is required before you can join another property, and before you're
-              eligible to rate this landlord.
-            </p>
-            <button className="btn btn-ghost" onClick={handleLeave}>Leave this property</button>
-          </div>
-        </div>
-      )}
-
-      {isOwner && (
-        <div className="section">
-          <div className="section-head">
-            <h2>Join codes</h2>
-            <button className="btn btn-ghost btn-sm" onClick={handleGenerateJoinCode}>
-              Generate code
+          {!isLandlord && isEnrolled && (
+            <button className="btn btn-danger btn-sm" onClick={() => setShowVacateModal(true)}>
+              Vacate Residence
             </button>
-          </div>
-          <p className="form-hint" style={{ marginBottom: "0.8rem" }}>
-            Codes are reusable by any tenant until they expire or you revoke them.
-          </p>
-          {joinCodes.length === 0 ? (
-            <p className="empty-state">No active join codes.</p>
-          ) : (
-            <ul className="list">
-              {joinCodes.map((j) => (
-                <li className="list-row" key={j.codeId}>
-                  <div className="list-row-main">
-                    <span className="list-row-title">{j.codeValue}</span>
-                    <div className="list-row-meta">
-                      expires {j.expiryDate} ·{" "}
-                      <span className={`badge ${statusBadgeClass(j.status)}`}>{j.status}</span>
-                    </div>
-                  </div>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => handleRevokeJoinCode(j.codeId)}
-                  >
-                    Revoke
-                  </button>
-                </li>
-              ))}
-            </ul>
           )}
         </div>
-      )}
 
-      {canSeePrivateInfo ? (
-        <>
-          <div className="section">
-            <h2>Announcements</h2>
-            {isOwner && (
-              <div className="card" style={{ marginBottom: "1rem" }}>
-                <form className="inline-form" onSubmit={announcementForm.handleSubmit(onCreateAnnouncement)}>
-                  <input
-                    placeholder="Post an announcement"
-                    style={{ flex: 1, minWidth: "200px" }}
-                    {...announcementForm.register("message", { required: true })}
-                  />
-                  <button className="btn" type="submit">Post</button>
-                </form>
-              </div>
-            )}
-            {announcements.length === 0 ? (
-              <p className="empty-state">No announcements yet.</p>
-            ) : (
-              <ul className="list">
-                {announcements.map((a) => (
-                  <li className="list-row" key={a.announcementId}>
-                    <div className="list-row-main">
-                      <div className="list-row-meta">{a.date}</div>
-                      <div className="list-row-body">{a.message}</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+        {/* Vacate Residence Confirmation Modal */}
+        <Modal isOpen={showVacateModal} onClose={() => setShowVacateModal(false)}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", color: "#ff6b61" }}>
+            <AlertTriangle size={20} />
+            <h2 style={{ margin: 0 }}>Vacate this residence?</h2>
           </div>
-
-          <div className="section">
-            <h2>Complaints</h2>
-            {isEnrolled && (
-              <div className="card" style={{ marginBottom: "1rem" }}>
-                <form className="inline-form" onSubmit={complaintForm.handleSubmit(onCreateComplaint)}>
-                  <input
-                    placeholder="Describe the issue"
-                    style={{ flex: 1, minWidth: "200px" }}
-                    {...complaintForm.register("message", { required: true })}
-                  />
-                  <button className="btn" type="submit">Submit</button>
-                </form>
-              </div>
-            )}
-            {visibleComplaints.length === 0 ? (
-              <p className="empty-state">No complaints filed.</p>
-            ) : (
-              <ul className="list">
-                {visibleComplaints.map((c) => (
-                  <li className="list-row" key={c.complaintId}>
-                    <div className="list-row-main">
-                      <div className="list-row-meta">{c.date}</div>
-                      <div className="list-row-body">{c.message}</div>
-                    </div>
-                    <span className={`badge ${statusBadgeClass(c.status)}`}>{c.status}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <p>
+            You will lose access to all announcements, incident reports, and billing records for this property. This action cannot be undone until you re-enroll with a valid pass code.
+          </p>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={() => setShowVacateModal(false)}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() => {
+                setShowVacateModal(false);
+                handleLeave();
+              }}
+            >
+              Confirm Vacate
+            </button>
           </div>
+        </Modal>
 
+        {error && <p className="banner-error">{error}</p>}
+        {notice && (
+          <div className="badge badge-ok" style={{ marginBottom: "1.5rem", padding: "0.5rem 1rem" }}>
+            <CheckCircle2 size={15} /> {notice}
+          </div>
+        )}
+
+        {/* Unenrolled Tenant Join Code Prompt */}
+        {!isLandlord && !isEnrolled && (
           <div className="section">
-            <h2>Bills</h2>
-            {bills.length === 0 ? (
-              <p className="empty-state">No bills yet.</p>
+            <div className="card">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <Key size={18} style={{ color: "var(--accent)" }} />
+                <h2 style={{ margin: 0 }}>Enroll in this Property</h2>
+              </div>
+              <p className="form-hint" style={{ marginBottom: "1rem" }}>
+                Enter the access pass code issued by the landlord to unlock announcements, incident filing, and billing.
+              </p>
+
+              {hasActiveTenancyElsewhere && (
+                <p className="field-error" style={{ marginBottom: "0.85rem" }}>
+                  You currently have an active tenancy elsewhere. Vacate your current property before enrolling here.
+                </p>
+              )}
+
+              <form className="inline-form" onSubmit={joinForm.handleSubmit(onEnroll)}>
+                <input
+                  placeholder="Enter 6-character code"
+                  style={{ maxWidth: "260px" }}
+                  {...joinForm.register("code", { required: true })}
+                />
+                <button className="btn" type="submit" disabled={hasActiveTenancyElsewhere}>
+                  Enroll Now
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Landlord Join Codes Management */}
+        {isOwner && (
+          <div className="section">
+            <div className="section-head">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <Key size={18} style={{ color: "var(--accent)" }} />
+                <h2>Access Pass Codes</h2>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={handleGenerateJoinCode}>
+                <Plus size={14} />
+                <span>Generate Pass</span>
+              </button>
+            </div>
+
+            {joinCodes.length === 0 ? (
+              <p className="empty-state">No active pass codes generated yet.</p>
             ) : (
               <ul className="list">
-                {bills.map((b) => (
-                  <li className="list-row" key={b.billId}>
+                {joinCodes.map((j) => (
+                  <li className="list-row" key={j.codeId}>
                     <div className="list-row-main">
-                      <span className="list-row-title">{b.type}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                        <span className="list-row-title" style={{ fontFamily: "monospace", letterSpacing: "0.08em", fontSize: "1.1rem" }}>
+                          {j.codeValue}
+                        </span>
+                        <span className={`badge ${statusBadgeClass(j.status)}`}>{j.status}</span>
+                      </div>
                       <div className="list-row-meta">
-                        {b.month} · {b.totalAmount} BDT · due {b.dueDate}
+                        <span>Valid until {j.expiryDate}</span>
                       </div>
                     </div>
+                    <div className="list-row-actions">
+                      <ActionMenu
+                        label="Revoke"
+                        items={[
+                          { label: "Revoke Pass", onClick: () => handleRevokeJoinCode(j.codeId), danger: true },
+                        ]}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
+          </div>
+        )}
 
-            {isEnrolled && (
-              <div className="section">
-                <h2>My bill share</h2>
-                {myBillShares.length === 0 ? (
-                  <p className="empty-state">No shares assigned to you yet.</p>
-                ) : (
+        {canSeePrivateInfo ? (
+          <>
+            {/* Announcements */}
+            <div className="section">
+              <div className="section-head">
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Megaphone size={18} style={{ color: "var(--accent)" }} />
+                  <h2>Announcements</h2>
+                </div>
+              </div>
+
+              {isOwner && (
+                <div className="card" style={{ marginBottom: "1rem" }}>
+                  <form className="inline-form" onSubmit={announcementForm.handleSubmit(onCreateAnnouncement)}>
+                    <input
+                      placeholder="Broadcast a notice to all tenants in this building..."
+                      style={{ flex: 1, minWidth: "240px" }}
+                      {...announcementForm.register("message", { required: true })}
+                    />
+                    <button className="btn btn-sm" type="submit">
+                      <Send size={13} />
+                      <span>Post Notice</span>
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {announcements.length === 0 ? (
+                <p className="empty-state">No notices posted for this property.</p>
+              ) : (
+                <ul className="list">
+                  {announcements.map((a) => (
+                    <li className="list-row" key={a.announcementId}>
+                      <div className="list-row-main">
+                        <div className="list-row-meta" style={{ marginBottom: "0.35rem" }}>
+                          <Calendar size={13} /> {a.date}
+                        </div>
+                        <div className="list-row-body" style={{ marginTop: 0 }}>
+                          {a.message}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Complaints */}
+            <div className="section">
+              <div className="section-head">
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <AlertCircle size={18} style={{ color: "var(--accent)" }} />
+                  <h2>Maintenance & Inquiries</h2>
+                </div>
+              </div>
+
+              {isEnrolled && (
+                <div className="card" style={{ marginBottom: "1rem" }}>
+                  <form className="inline-form" onSubmit={complaintForm.handleSubmit(onCreateComplaint)}>
+                    <input
+                      placeholder="Describe the maintenance issue or inquiry..."
+                      style={{ flex: 1, minWidth: "240px" }}
+                      {...complaintForm.register("message", { required: true })}
+                    />
+                    <button className="btn btn-sm" type="submit">
+                      <Send size={13} />
+                      <span>Report Issue</span>
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {visibleComplaints.length === 0 ? (
+                <p className="empty-state">No complaints reported.</p>
+              ) : (
+                <ul className="list">
+                  {visibleComplaints.map((c) => (
+                    <li className="list-row" key={c.complaintId}>
+                      <div className="list-row-main">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                          <div className="list-row-meta" style={{ margin: 0 }}>
+                            <Calendar size={13} /> {c.date}
+                          </div>
+                          <span className={`badge ${statusBadgeClass(c.status)}`}>{c.status}</span>
+                        </div>
+                        <div className="list-row-body" style={{ marginTop: 0 }}>
+                          {c.message}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Bills Overview */}
+            <div className="section">
+              <div className="section-head">
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Receipt size={18} style={{ color: "var(--accent)" }} />
+                  <h2>Utility Schedules</h2>
+                </div>
+                <Link to="/bills" className="btn btn-ghost btn-sm">
+                  <span>Open Bills Center</span>
+                </Link>
+              </div>
+
+              {bills.length === 0 ? (
+                <p className="empty-state">No utility schedules recorded.</p>
+              ) : (
+                <ul className="list">
+                  {bills.map((b) => (
+                    <li className="list-row" key={b.billId}>
+                      <div className="list-row-main">
+                        <span className="list-row-title">{b.type}</span>
+                        <div className="list-row-meta">
+                          <span>{b.month}</span>
+                          <span>•</span>
+                          <span style={{ color: "#fff", fontWeight: "600" }}>{b.totalAmount} BDT</span>
+                          <span>•</span>
+                          <span>Due {b.dueDate}</span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {isEnrolled && myBillShares.length > 0 && (
+                <div style={{ marginTop: "1.5rem" }}>
+                  <h3 style={{ marginBottom: "0.75rem" }}>Your Individual Dues</h3>
                   <ul className="list">
                     {myBillShares.map((s) => (
                       <li className="list-row" key={s.shareId}>
-                        <div className="list-row-main">Bill #{s.billId}: {s.shareAmount} BDT</div>
-                        <span className={`badge ${statusBadgeClass(s.paidStatus)}`}>{paidLabel(s.paidStatus)}</span>
+                        <div className="list-row-main">
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span className="list-row-title" style={{ fontSize: "0.95rem" }}>
+                              Bill #{s.billId} Share
+                            </span>
+                            <span className={`badge ${statusBadgeClass(s.paidStatus)}`}>
+                              {paidLabel(s.paidStatus)}
+                            </span>
+                          </div>
+                          <div className="list-row-meta" style={{ marginTop: "0.25rem" }}>
+                            <span>Amount: {s.shareAmount} BDT</span>
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ul>
-                )}
-                <p className="form-hint">Pay or confirm a share from the Bills page.</p>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="empty-state" style={{ marginTop: "2rem" }}>
+            <p style={{ margin: 0 }}>Enroll with an access pass code to view private building notices, incidents, and utility ledgers.</p>
           </div>
-        </>
-      ) : (
-        <p className="empty-state">
-          Enroll with a join code to see announcements, complaints, and bills for this property.
-        </p>
-      )}
-    </div>
+        )}
+      </div>
+    </AppShell>
   );
 }

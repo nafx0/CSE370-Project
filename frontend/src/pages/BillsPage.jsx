@@ -12,6 +12,9 @@ import {
   getProperties,
   getTenancies,
 } from "../api";
+import AppShell from "../components/AppShell";
+import ActionMenu from "../components/ActionMenu";
+import { Plus, CreditCard } from "lucide-react";
 
 function isPaid(status) {
   return (status || "").toLowerCase() === "paid";
@@ -21,9 +24,6 @@ function statusBadgeClass(status) {
   return isPaid(status) ? "badge-ok" : "badge-warn";
 }
 
-// The backend only ever sets paidStatus once a share is actually paid —
-// a freshly created share comes back as paidStatus: null. Without this
-// fallback the badge renders with the right color but no text at all.
 function paidLabel(status) {
   return isPaid(status) ? "PAID" : "UNPAID";
 }
@@ -38,6 +38,7 @@ export default function BillsPage() {
   const [tenancies, setTenancies] = useState([]);
   const [error, setError] = useState("");
   const [payingShareId, setPayingShareId] = useState(null);
+  const [showCreateBill, setShowCreateBill] = useState(false);
 
   const billForm = useForm();
   const payForm = useForm();
@@ -92,9 +93,6 @@ export default function BillsPage() {
         dueDate: formData.dueDate,
       });
 
-      // Auto-split the total evenly across tenants currently enrolled in
-      // this property. The server sets each share to unpaid by default —
-      // we only send the identifying fields and amount.
       const enrolledTenantIds = tenancies
         .filter((t) => t.propertyId === propertyId && !t.leaveDate)
         .map((t) => t.tenantId);
@@ -111,6 +109,7 @@ export default function BillsPage() {
       }
 
       billForm.reset();
+      setShowCreateBill(false);
       loadAll();
     } catch (err) {
       setError(err.message);
@@ -124,7 +123,7 @@ export default function BillsPage() {
       loadAll();
     } catch (err) {
       if (err.status === 500) {
-        setError("Can't delete — this bill still has shares assigned to it.");
+        setError("Can't delete — this bill still has active share records attached.");
       } else {
         setError(err.message);
       }
@@ -139,199 +138,278 @@ export default function BillsPage() {
       setPayingShareId(null);
       loadAll();
     } catch (err) {
-      // e.g. "already paid" or missing transaction ID
       setError(err.message);
     }
   }
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <Link to="/" className="back-link">← Dashboard</Link>
-          <h1>Bills</h1>
-        </div>
-      </div>
-
-      {error && <p className="banner-error">{error}</p>}
-
-      {isLandlord && (
-        <div className="section">
-          <div className="card">
-            <h2>Create a bill</h2>
-            <form className="form" onSubmit={billForm.handleSubmit(onCreateBill)}>
-              <div className="form-row">
-                <div className="field">
-                  <label>Property</label>
-                  <select {...billForm.register("propertyId", { required: true })}>
-                    {myProperties.map((p) => (
-                      <option key={p.propertyId} value={p.propertyId}>{p.address}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Type</label>
-                  <input
-                    placeholder="e.g. electricity"
-                    {...billForm.register("type", { required: true })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="field">
-                  <label>Total amount (BDT)</label>
-                  <input type="number" {...billForm.register("totalAmount", { required: true })} />
-                </div>
-                <div className="field">
-                  <label>Month</label>
-                  <input
-                    placeholder="e.g. July 2026"
-                    {...billForm.register("month", { required: true })}
-                  />
-                </div>
-              </div>
-
-              <div className="field">
-                <label>Due date</label>
-                <input type="date" {...billForm.register("dueDate", { required: true })} />
-              </div>
-
-              <div className="form-actions">
-                <button className="btn" type="submit">Create bill</button>
-              </div>
-              <p className="form-hint">
-                The total is split evenly among tenants currently enrolled in the property.
-              </p>
-            </form>
+    <AppShell>
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h1>Bills & Utilities</h1>
+            <p className="page-subtitle">
+              {isLandlord
+                ? "Manage utility schedules and view tenant payment statuses"
+                : "Your apportioned utility dues and payment confirmations"}
+            </p>
           </div>
+          {isLandlord && !showCreateBill && (
+            <button className="btn" onClick={() => setShowCreateBill(true)}>
+              <Plus size={16} />
+              <span>Create Bill</span>
+            </button>
+          )}
         </div>
-      )}
 
-      <div className="section">
-        <h2>{isLandlord ? "My property bills" : "Bills for my properties"}</h2>
-        {visibleBills.length === 0 ? (
-          <p className="empty-state">No bills yet.</p>
-        ) : (
-          <ul className="list">
-            {visibleBills.map((b) => (
-              <li className="list-row" key={b.billId} style={{ display: "block" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div className="list-row-main">
-                    <span className="list-row-title">{getPropertyAddress(b.propertyId)}</span>
-                    <div className="list-row-meta">
-                      {b.type} · {b.month} · {b.totalAmount} BDT · due {b.dueDate}
-                    </div>
-                  </div>
-                  {isLandlord && (
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBill(b.billId)}>
-                      Delete
-                    </button>
-                  )}
-                </div>
+        {error && <p className="banner-error">{error}</p>}
 
-                {isLandlord && getSharesFor(b.billId).length > 0 && (
-                  <ul className="sublist">
-                    {getSharesFor(b.billId).map((s) => (
-                      <li key={s.shareId}>
-                        Tenant #{s.tenantId}: {s.shareAmount} BDT —{" "}
-                        <span className={`badge ${statusBadgeClass(s.paidStatus)}`}>{paidLabel(s.paidStatus)}</span>
-                        {isPaid(s.paidStatus) && s.transactionId ? ` · txn ${s.transactionId}` : ""}
-                        {isPaid(s.paidStatus) && s.paidDate ? ` (paid ${s.paidDate})` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+        {/* Tenant Dues Ledger */}
+        {!isLandlord && (
+          <div className="section" style={{ marginTop: 0 }}>
+            <div className="section-head">
+              <h2>Your Individual Dues</h2>
+            </div>
 
-      {!isLandlord && (
-        <div className="section">
-          <h2>My bill shares</h2>
-          {myShares.length === 0 ? (
-            <p className="empty-state">No shares assigned to you yet.</p>
-          ) : (
-            <ul className="list">
-              {myShares.map((s) => (
-                <li className="list-row" key={s.shareId} style={{ display: "block" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            {myShares.length === 0 ? (
+              <p className="empty-state">No bills or dues assigned to you yet.</p>
+            ) : (
+              <ul className="list">
+                {myShares.map((s) => (
+                  <li className="list-row" key={s.shareId}>
                     <div className="list-row-main">
-                      Bill #{s.billId}: {s.shareAmount} BDT
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                        <span className="list-row-title" style={{ margin: 0 }}>
+                          Bill #{s.billId} Share
+                        </span>
+                        <span className={`badge ${statusBadgeClass(s.paidStatus)}`}>
+                          {paidLabel(s.paidStatus)}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: "0.4rem 0" }}>
+                        {s.shareAmount} <span style={{ fontSize: "0.82rem", fontWeight: "400", color: "var(--ink-faint)" }}>BDT</span>
+                      </div>
+
                       {isPaid(s.paidStatus) && s.transactionId && (
                         <div className="list-row-meta">
-                          txn {s.transactionId} · paid {s.paidDate}
+                          <span>Transaction: {s.transactionId}</span>
+                          {s.paidDate && <span>• Paid on {s.paidDate}</span>}
                         </div>
                       )}
                     </div>
-                    <div className="list-row-actions">
-                      <span className={`badge ${statusBadgeClass(s.paidStatus)}`}>{paidLabel(s.paidStatus)}</span>
+
+                    <div className="list-row-actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
                       {!isPaid(s.paidStatus) && payingShareId !== s.shareId && (
                         <button className="btn btn-sm" onClick={() => setPayingShareId(s.shareId)}>
-                          Mark as paid
+                          <CreditCard size={14} />
+                          <span>Mark as Paid</span>
                         </button>
                       )}
+
+                      {payingShareId === s.shareId && (
+                        <form
+                          className="form"
+                          style={{ width: "100%", marginTop: "0.5rem" }}
+                          onSubmit={payForm.handleSubmit((data) => onConfirmPay(s, data))}
+                        >
+                          <p className="form-hint" style={{ fontSize: "0.78rem" }}>
+                            Enter and confirm transaction ID. Once recorded, this action cannot be reversed.
+                          </p>
+
+                          <div className="form-row">
+                            <div className="field">
+                              <label>Transaction ID</label>
+                              <input
+                                placeholder="TXN-98214"
+                                {...payForm.register("transactionId", { required: "Required" })}
+                              />
+                              {payForm.formState.errors.transactionId && (
+                                <p className="field-error">{payForm.formState.errors.transactionId.message}</p>
+                              )}
+                            </div>
+
+                            <div className="field">
+                              <label>Confirm ID</label>
+                              <input
+                                placeholder="Repeat TXN ID"
+                                {...payForm.register("confirmTransactionId", {
+                                  required: "Required",
+                                  validate: (value, formValues) =>
+                                    value === formValues.transactionId || "IDs do not match",
+                                })}
+                              />
+                              {payForm.formState.errors.confirmTransactionId && (
+                                <p className="field-error">
+                                  {payForm.formState.errors.confirmTransactionId.message}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="form-actions">
+                            <button className="btn btn-sm" type="submit">
+                              Confirm Settlement
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => {
+                                setPayingShareId(null);
+                                payForm.reset();
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Landlord Create Bill Sheet */}
+        {isLandlord && showCreateBill && (
+          <div className="section">
+            <div className="card">
+              <div className="section-head">
+                <h2>Create New Utility Bill</h2>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreateBill(false)}>
+                  Cancel
+                </button>
+              </div>
+
+              {myProperties.length === 0 ? (
+                <p className="empty-state">
+                  You have no registered properties. Add a property listing first before creating bills.
+                </p>
+              ) : (
+                <form className="form" onSubmit={billForm.handleSubmit(onCreateBill)}>
+                  <div className="form-row">
+                    <div className="field">
+                      <label>Target Residence</label>
+                      <select {...billForm.register("propertyId", { required: true })}>
+                        <option value="" disabled>Select a property…</option>
+                        {myProperties.map((p) => (
+                          <option key={p.propertyId} value={p.propertyId}>{p.address}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Bill Type</label>
+                      <input
+                        placeholder="e.g. Electricity, Water, Gas, Internet"
+                        {...billForm.register("type", { required: true })}
+                      />
                     </div>
                   </div>
 
-                  {payingShareId === s.shareId && (
-                    <form
-                      className="form"
-                      style={{ marginTop: "0.8rem" }}
-                      onSubmit={payForm.handleSubmit((data) => onConfirmPay(s, data))}
-                    >
-                      <p className="form-hint">
-                        This can't be undone once confirmed. Enter the transaction ID twice to confirm.
-                      </p>
-                      <div className="form-row">
-                        <div className="field">
-                          <label>Transaction ID</label>
-                          <input
-                            {...payForm.register("transactionId", { required: "Required" })}
-                          />
-                          {payForm.formState.errors.transactionId && (
-                            <p className="field-error">{payForm.formState.errors.transactionId.message}</p>
-                          )}
-                        </div>
-                        <div className="field">
-                          <label>Confirm transaction ID</label>
-                          <input
-                            {...payForm.register("confirmTransactionId", {
-                              required: "Required",
-                              validate: (value, formValues) =>
-                                value === formValues.transactionId || "Doesn't match",
-                            })}
-                          />
-                          {payForm.formState.errors.confirmTransactionId && (
-                            <p className="field-error">
-                              {payForm.formState.errors.confirmTransactionId.message}
-                            </p>
-                          )}
+                  <div className="form-row">
+                    <div className="field">
+                      <label>Total Amount (BDT)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 4500"
+                        {...billForm.register("totalAmount", { required: true })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Billing Month</label>
+                      <input
+                        placeholder="e.g. October 2026"
+                        {...billForm.register("month", { required: true })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field">
+                    <label>Due Date</label>
+                    <input type="date" {...billForm.register("dueDate", { required: true })} />
+                  </div>
+
+                  <div className="form-actions">
+                    <button className="btn" type="submit">
+                      Issue & Split Bill
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setShowCreateBill(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="form-hint">
+                    The total amount is automatically split equally among all tenants currently residing in this building.
+                  </p>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Bills Ledger (Landlords or Overall Property Bills) */}
+        <div className="section">
+          <div className="section-head">
+            <h2>{isLandlord ? "Building Bills & Shares" : "Building Schedules"}</h2>
+          </div>
+
+          {visibleBills.length === 0 ? (
+            <p className="empty-state">No bills recorded for your properties.</p>
+          ) : (
+            <ul className="list">
+              {visibleBills.map((b) => (
+                <li className="list-row" key={b.billId}>
+                  <div className="list-row-main">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <span className="badge badge-neutral" style={{ marginBottom: "0.4rem" }}>
+                          {b.type}
+                        </span>
+                        <Link to={`/properties/${b.propertyId}`} className="list-row-title" style={{ display: "block" }}>
+                          {getPropertyAddress(b.propertyId)}
+                        </Link>
+                        <div className="list-row-meta">
+                          <span>{b.month}</span>
+                          <span>•</span>
+                          <span style={{ color: "#fff", fontWeight: "600" }}>{b.totalAmount} BDT</span>
+                          <span>•</span>
+                          <span>Due {b.dueDate}</span>
                         </div>
                       </div>
-                      <div className="form-actions">
-                        <button className="btn btn-sm" type="submit">Confirm payment</button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => {
-                            setPayingShareId(null);
-                            payForm.reset();
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  )}
+
+                      {isLandlord && (
+                        <ActionMenu
+                          label="Manage"
+                          items={[
+                            { label: "Delete Bill", onClick: () => handleDeleteBill(b.billId), danger: true },
+                          ]}
+                        />
+                      )}
+                    </div>
+
+                    {isLandlord && getSharesFor(b.billId).length > 0 && (
+                      <ul className="sublist" style={{ marginTop: "1rem" }}>
+                        {getSharesFor(b.billId).map((s) => (
+                          <li key={s.shareId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span>
+                              Tenant #{s.tenantId}: {s.shareAmount} BDT
+                              {isPaid(s.paidStatus) && s.transactionId ? ` (TXN ${s.transactionId})` : ""}
+                            </span>
+                            <span className={`badge ${statusBadgeClass(s.paidStatus)}`}>
+                              {paidLabel(s.paidStatus)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </AppShell>
   );
 }

@@ -9,7 +9,11 @@ export default function ProtectedRoute({ children }) {
   // Wait for the /api/auth/me check to finish before deciding anything —
   // otherwise a logged-in user gets bounced to /login on every refresh.
   if (loading) {
-    return <p>Loading...</p>;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <p className="loading">Authenticating…</p>
+      </div>
+    );
   }
 
   if (!user) {
