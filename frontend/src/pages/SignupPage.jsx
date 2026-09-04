@@ -7,7 +7,6 @@ import heroImage from "../assets/aubrey-odom-ITzfgP77DTg-unsplash.jpg";
 import {
   BD_PHONE_PATTERN,
   EMAIL_PATTERN,
-  NAME_PATTERN,
   NID_PATTERN,
   PASSWORD_PATTERN,
 } from "../utils/validation";
@@ -90,14 +89,6 @@ export default function SignupPage() {
                   placeholder="Alex Morgan"
                   {...register("name", {
                     required: "Name is required",
-                    pattern: {
-                      value: NAME_PATTERN,
-                      message: "Use letters, spaces, periods, apostrophes, or hyphens only.",
-                    },
-                    minLength: {
-                      value: 2,
-                      message: "Name must be at least 2 characters.",
-                    },
                   })}
                 />
                 {errors.name && <p className="field-error">{errors.name.message}</p>}
