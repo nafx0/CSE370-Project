@@ -2,8 +2,6 @@
 
 Split by module rather than by layer: each person owns the database table(s), backend controller, and frontend page(s) for their features end-to-end. This keeps the DB/backend/frontend workload equal for both people, rather than one person doing all the backend and the other doing all the UI.
 
-Replace **Nafiul** / **Rahib** with actual names before submitting.
-
 ---
 
 ## Nafiul — Identity, Properties & Enrollment
